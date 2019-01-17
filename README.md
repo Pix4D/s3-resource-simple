@@ -8,26 +8,32 @@ Include the following in your Pipeline YAML file, replacing the values in the an
 
 ```yaml
 resource_types:
-- name: <resource type name>
-  type: docker-image
-  source:
-    repository: 18fgsa/s3-resource-simple
+  - name: <resource type name>
+    type: docker-image
+    source:
+      repository: 18fgsa/s3-resource-simple
 resources:
-- name: <resource name>
-  type: <resource type name>
-  source:
-    access_key_id: {{aws-access-key}}
-    secret_access_key: {{aws-secret-key}}
-    bucket: {{aws-bucket}}
-    path: [<optional>, use to sync to a specific path of the bucket instead of root of bucket]
-    options: [<optional, see note below>]
-    region: <optional, see below>
-    sync: <optional, see below>
+  - name: <resource name>
+    type: <resource type name>
+    source:
+      access_key_id: { { aws-access-key } }
+      secret_access_key: { { aws-secret-key } }
+      bucket: { { aws-bucket } }
+      path:
+        [
+          <optional>,
+          use to sync to a specific path of the bucket instead of root of bucket,
+        ]
+      options: [<optional, see note below>]
+      region: <optional, see below>
+      sync: <optional, see below>
 jobs:
-- name: <job name>
-  plan:
-  - <some Resource or Task that outputs files>
-  - put: <resource name>
+  - name: <job name>
+    plan:
+      - <some Resource or Task that outputs files>
+      - put: <resource name>
+        params:
+          dir: assets
 ```
 
 ## AWS Credentials
@@ -53,22 +59,33 @@ we can upload _only_ the `results` subdirectory by using the following `options`
 
 ```yaml
 options:
-- "--exclude '*'"
-- "--include 'results/*'"
+  - "--exclude '*'"
+  - "--include 'results/*'"
 ```
 
 ### Region
+
 Interacting with some AWS regions (like London) requires AWS Signature Version
+
 4. This options allows you to explicitly specify region where your bucket is
-located (if this is set, AWS_DEFAULT_REGION env variable will be set accordingly).
+   located (if this is set, AWS_DEFAULT_REGION env variable will be set accordingly).
 
 ```yaml
 region: eu-west-2
 ```
 
 ### Sync
-By default files will be synced from s3. Disabling this will only upload new files.
+
+By default files will _not_ be synced from s3. Disabling this will download all files.
 
 ```yaml
-sync: false
+sync: true
+```
+
+### Dir
+
+Will change the working directory to subdirectory before invoking the sync
+
+```yaml
+dir: subdirectory
 ```

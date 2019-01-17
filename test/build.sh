@@ -2,4 +2,4 @@
 
 set -e
 
-docker build -t 18fgsa/s3-resource-simple .
+docker build -t maiis/s3-resource-simple .
