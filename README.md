@@ -1,4 +1,4 @@
-# Simple S3 Resource for [Concourse CI](http://concourse.ci)
+# Simple S3 Resource for [Concourse CI](https://concourse-ci.org/)
 
 Resource to upload files to S3. Unlike the [the official S3 Resource](https://github.com/concourse/s3-resource), this Resource can upload or download multiple files.
 
