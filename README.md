@@ -1,4 +1,74 @@
-# Simple S3 Resource for [Concourse CI](https://concourse-ci.org/)
+# Simple S3 Resource for Concourse
+
+This is a fork of the Concourse resource s3-resource-simple.
+
+## Consuming this resource
+
+```YAML
+resource_types:
+- name: s3-resource-simple
+  type: docker-image
+  source:
+    # No `tag:` specified: will pick up `latest`.
+    repository: MYREGISTRY/s3-resource-simple
+```
+
+## Pipelines to build and test this resource
+
+![](simple-pipeline.png)
+
+The pipeline file at [ci/s3-resource-simple-pipeline.yml](ci/s3-resource-simple-pipeline.yml) enables a workflow where you can have per-feature branch pipelines plus a master pipeline.
+
+### Master branch pipeline
+
+The master branch pipeline, `s3-resource-simple-master`, will push the Docker image for the Concourse resource to repository `s3-resource-simple` with tag `latest`, so that any client pipeline will pick it up immediately.
+
+Each time a feat branch is merged into the master branch, this pipeline will run and publish a new Docker image.
+
+### Feature branch pipelines
+
+Given feature branch `feat-x`, the associated feature branch pipeline `s3-resource-simple-feat-x` will push the Docker image for the Concourse resource to repository `s3-resource-simple-scratch` with tag `feat-x-latest`, so that additional integrations tests can be done by referring to the scratch repository with the tag `feat-x-latest` without impacting users of the published resource.
+
+### Configuration
+
+* Add to your Concourse credentials manager the needed secrets.
+* Optionally change files `ci/settings/master-branch.yml` and `ci/settings/feature-branch.yml`.
+
+### Setting the master pipeline
+
+```shell
+fly -t developers set-pipeline -p s3-resource-simple-master \
+    -c ci/s3-resource-simple-pipeline.yml \
+    -l ci/settings/master-branch.yml \
+    -v branch=master \
+    -v tag=latest \
+    -v tag_prefix=""
+
+fly -t developers unpause-pipeline -p s3-resource-simple-master
+```
+
+### Setting the feature branch pipeline
+
+```shell
+export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+fly -t developers set-pipeline -p s3-resource-simple-$BRANCH \
+    -c ci/s3-resource-simple-pipeline.yml \
+    -l ci/settings/feature-branch.yml \
+    -v branch=$BRANCH \
+    -v tag=$BRANCH-latest \
+    -v tag_prefix=$BRANCH-
+
+fly -t developers unpause-pipeline -p s3-resource-simple-$BRANCH
+```
+
+### Understanding the different Docker images at play
+
+With reference to the pipeline, there are two jobs, `work-img` and `resource-img`.
+
+* Job `work-img` is used to build images for the workings of the pipeline itself, that is, to run the test tasks.
+* Job `resource-img` builds the final product of this pipeline: the Concourse resource `s3-resource-simple`.
+
+## WARNING: Everything below is outdated
 
 Resource to upload files to S3. Unlike the [the official S3 Resource](https://github.com/concourse/s3-resource), this Resource can upload or download multiple files.
 
