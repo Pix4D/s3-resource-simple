@@ -39,10 +39,7 @@ Given feature branch `feat-x`, the associated feature branch pipeline `s3-resour
 ```shell
 fly -t developers set-pipeline -p s3-resource-simple-master \
     -c ci/s3-resource-simple-pipeline.yml \
-    -l ci/settings/master-branch.yml \
-    -v branch=master \
-    -v tag=latest \
-    -v tag_prefix=""
+    -l ci/settings/master-branch.yml
 
 fly -t developers unpause-pipeline -p s3-resource-simple-master
 ```
