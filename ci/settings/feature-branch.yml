@@ -1,0 +1,2 @@
+# Settings for the feature pipelines.
+s3-resource-simple-registry: s3-resource-simple-scratch
