@@ -37,6 +37,7 @@ fi
 
 cd "$source/$dir"
 echo "Uploading to S3 from dir=$dir ..."
+echo "Running: aws s3 cp $source/$dir \"s3://$bucket/$path\" $options"
 eval aws s3 cp $source/$dir "s3://$bucket/$path" $options
 echo "...done."
 
