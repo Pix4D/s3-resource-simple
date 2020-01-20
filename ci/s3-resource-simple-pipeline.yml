@@ -1,0 +1,135 @@
+docker-registry-config: &docker-registry-config
+  insecure_registries: ['docker.internal:5000']
+  username: ((docker_cloud_pix4d_user))
+  password: ((docker_cloud_pix4d_password))
+
+s3-resource-simple-git: &s3-resource-simple-git
+  uri: https://github.com/Pix4D/s3-resource-simple.git
+
+###############################################################################
+
+resource_types:
+
+- name: s3-resource-simple
+  type: docker-image
+  source:
+    <<: *docker-registry-config
+    repository: docker.internal:5000/((s3-resource-simple-registry))
+    tag: ((tag))
+
+###############################################################################
+
+resources:
+
+- name: s3-resource-simple.git
+  type: git
+  source:
+    <<: *s3-resource-simple-git
+    ignore_paths: [ci/work-img]
+    branch: ((branch))
+
+- name: work-img.git
+  type: git
+  source:
+    <<: *s3-resource-simple-git
+    paths: [ci/work-img]
+    branch: ((branch))
+
+- name: work-img.docker
+  type: docker-image
+  source:
+    <<: *docker-registry-config
+    repository: docker.internal:5000/s3-resource-simple-work-img
+
+- name: final-img.docker
+  type: docker-image
+  source:
+    <<: *docker-registry-config
+    repository: docker.internal:5000/((s3-resource-simple-registry))
+
+- name: bucket.s3simple
+  type: s3-resource-simple
+  source:
+    bucket: ci-pix4d-concourse-third-party
+    region_name: eu-west-1
+    access_key_id: ((concourse_user_access_key))
+    secret_access_key: ((concourse_user_secret_key))
+    path: artifacts/s3-resource-simple/((branch))/
+    sync: false # Disable downloading.
+    options:
+    # FIXME! `--recursive` is _currently_ needed to copy a directory :-(
+    - --recursive
+
+###############################################################################
+
+jobs:
+
+- name: work-img
+  serial_groups: [img]
+  plan:
+  - get: work-img.git
+    trigger: true
+  - put: work-img.docker
+    params:
+      build: work-img.git/ci/work-img
+      tag_prefix: ((tag_prefix))
+      tag_file: work-img.git/ci/work-img/tag_file
+    get_params: {skip_download: true}
+
+- name: resource-img
+  serial_groups: [img]
+  plan:
+  - get: s3-resource-simple.git
+    trigger: true
+  - put: final-img.docker
+    params:
+      build: s3-resource-simple.git
+      tag_prefix: ((tag_prefix))
+      tag_file: s3-resource-simple.git/tag_file
+    get_params: {skip_download: true}
+
+- name: test-put
+  # The serial_groups is to avoid race conditions when a single commit changes
+  # code both in work-img.git and s3-resource-simple.git
+  serial_groups: [img]
+  plan:
+  - get: s3-resource-simple.git
+    trigger: true
+    passed: [resource-img]
+  - get: work-img.docker
+    trigger: true
+    passed: [work-img]
+  - task: test-put
+    image: work-img.docker
+    config:
+      platform: linux
+      inputs:
+      - name: s3-resource-simple.git
+      outputs:
+      - name: out
+      run:
+        path: s3-resource-simple.git/ci/tasks/test-put.sh
+  - put: bucket.s3simple
+    params:
+      dir: out
+
+- name: test-get
+  plan:
+  - get: s3-resource-simple.git
+    trigger: true
+    passed: [test-put]
+  - get: bucket.s3simple
+    trigger: true
+    passed: [test-put]
+  - get: work-img.docker
+    trigger: true
+    passed: [test-put]
+  - task: test-get
+    image: work-img.docker
+    config:
+      platform: linux
+      inputs:
+      - name: s3-resource-simple.git
+      - name: bucket.s3simple
+      run:
+        path: s3-resource-simple.git/ci/tasks/test-get.sh
