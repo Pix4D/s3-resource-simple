@@ -4,5 +4,4 @@ s3-resource-simple-registry: s3-resource-simple
 
 # DO NOT TOUCH THESE UNLESS YOU KNOW WHAT YOU ARE DOING:
 branch: master
-tag: latest
 tag_prefix: ""
