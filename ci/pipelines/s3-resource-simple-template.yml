@@ -50,7 +50,7 @@ resources:
 - name: bucket.s3simple
   type: s3-resource-simple
   source:
-    bucket: ci-pix4d-concourse-third-party
+    bucket: ci-pix4d-concourse-pipeline
     region_name: eu-west-1
     access_key_id: ((concourse_user_access_key))
     secret_access_key: ((concourse_user_secret_key))
