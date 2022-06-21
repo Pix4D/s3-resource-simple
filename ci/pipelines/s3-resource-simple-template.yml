@@ -1,5 +1,4 @@
 docker-registry-config: &docker-registry-config
-  insecure_registries: ['docker.internal:5000']
   username: ((docker_cloud_pix4d_user))
   password: ((docker_cloud_pix4d_password))
 
@@ -14,7 +13,7 @@ resource_types:
   type: docker-image
   source:
     <<: *docker-registry-config
-    repository: docker.internal:5000/((s3-resource-simple-registry))
+    repository: docker.ci.pix4d.com/((s3-resource-simple-registry))
     tag: ((tag))
 
 ###############################################################################
@@ -39,13 +38,13 @@ resources:
   type: docker-image
   source:
     <<: *docker-registry-config
-    repository: docker.internal:5000/s3-resource-simple-work-img
+    repository: docker.ci.pix4d.com/s3-resource-simple-work-img
 
 - name: final-img.docker
   type: docker-image
   source:
     <<: *docker-registry-config
-    repository: docker.internal:5000/((s3-resource-simple-registry))
+    repository: docker.ci.pix4d.com/((s3-resource-simple-registry))
 
 - name: bucket.s3simple
   type: s3-resource-simple
