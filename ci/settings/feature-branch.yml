@@ -1,4 +1,4 @@
 # Settings for the feature pipelines.
 project: s3-resource-simple
-gchat_hook: ((gchat_hook_integration_team))
+gchat_hook:
 team: developers

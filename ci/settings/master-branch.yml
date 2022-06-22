@@ -1,6 +1,6 @@
 # Settings for the master pipeline.
 project: s3-resource-simple
-gchat_hook:
+gchat_hook: ((gchat_hook_integration_team))
 team: developers
 branch: master
 docker_tag: latest

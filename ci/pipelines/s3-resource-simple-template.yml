@@ -68,7 +68,7 @@ resources:
   type: git
   source:
     <<: *s3-resource-simple-git
-    paths: [ci/work-img]
+    paths: [ci/]
     branch: ((branch))
 
 - name: work-img.docker
@@ -108,8 +108,9 @@ jobs:
   plan:
   - get: work-img.git
     trigger: true
+  - get: s3-resource-simple.git
   - put: gh-status
-    inputs: [work-img.git]
+    inputs: [s3-resource-simple.git]
     params: {state: pending}
   - task: build-work-img
     privileged: true
@@ -177,7 +178,7 @@ jobs:
     trigger: true
     passed: [work-img]
   - put: gh-status
-    inputs: [s3-resource-simple.gi]
+    inputs: [s3-resource-simple.git]
     params: {state: pending}
   - task: test-put
     image: work-img.docker
@@ -206,7 +207,7 @@ jobs:
     trigger: true
     passed: [test-put]
   - put: gh-status
-    inputs: [s3-resource-simple.gi]
+    inputs: [s3-resource-simple.git]
     params: {state: pending}
   - task: test-get
     image: work-img.docker
