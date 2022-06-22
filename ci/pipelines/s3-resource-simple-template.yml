@@ -1,13 +1,41 @@
-docker-registry-config: &docker-registry-config
-  username: ((docker_cloud_pix4d_user))
-  password: ((docker_cloud_pix4d_password))
+meta:
+  docker-registry-config: &docker-registry-config
+    username: ((docker_cloud_pix4d_user))
+    password: ((docker_cloud_pix4d_password))
 
-s3-resource-simple-git: &s3-resource-simple-git
-  uri: https://github.com/Pix4D/s3-resource-simple.git
+  s3-resource-simple-git: &s3-resource-simple-git
+    uri: https://github.com/Pix4D/s3-resource-simple.git
+
+  gh-status-handlers: &gh-status-handlers
+      on_success:
+        put: gh-status
+        inputs: [s3-resource-simple.git]
+        params: {state: success}
+      on_failure:
+        put: gh-status
+        inputs: [s3-resource-simple.git]
+        params: {state: failure}
+      on_error:
+        put: gh-status
+        inputs: [s3-resource-simple.git]
+        params: {state: error}
+      on_abort:
+        put: gh-status
+        inputs: [s3-resource-simple.git]
+        # The GH status API doesn't have "abort", so we use the closest state.
+        params:
+          state: error
 
 ###############################################################################
 
 resource_types:
+
+- name: cogito
+  type: registry-image
+  check_every: 1h
+  source:
+    repository: pix4d/cogito
+    tag: latest
 
 - name: s3-resource-simple
   type: docker-image
@@ -19,6 +47,15 @@ resource_types:
 ###############################################################################
 
 resources:
+
+- name: gh-status
+  type: cogito
+  check_every: never
+  source:
+    owner: pix4d
+    repo: s3-resource-simple
+    access_token: ((github_repo_status_token))
+    gchat_webhook: ((gchat_hook))
 
 - name: s3-resource-simple.git
   type: git
@@ -64,10 +101,14 @@ resources:
 jobs:
 
 - name: work-img
+  <<: *gh-status-handlers
   serial_groups: [img]
   plan:
   - get: work-img.git
     trigger: true
+  - put: gh-status
+    inputs: [work-img.git]
+    params: {state: pending}
   - put: work-img.docker
     params:
       build: work-img.git/ci/work-img
@@ -76,10 +117,14 @@ jobs:
     get_params: {skip_download: true}
 
 - name: resource-img
+  <<: *gh-status-handlers
   serial_groups: [img]
   plan:
   - get: s3-resource-simple.git
     trigger: true
+  - put: gh-status
+    inputs: [s3-resource-simple.git]
+    params: {state: pending}
   - put: final-img.docker
     params:
       build: s3-resource-simple.git
@@ -88,6 +133,7 @@ jobs:
     get_params: {skip_download: true}
 
 - name: test-put
+  <<: *gh-status-handlers
   # The serial_groups is to avoid race conditions when a single commit changes
   # code both in work-img.git and s3-resource-simple.git
   serial_groups: [img]
@@ -98,6 +144,9 @@ jobs:
   - get: work-img.docker
     trigger: true
     passed: [work-img]
+  - put: gh-status
+    inputs: [s3-resource-simple.gi]
+    params: {state: pending}
   - task: test-put
     image: work-img.docker
     config:
@@ -113,6 +162,7 @@ jobs:
       dir: out
 
 - name: test-get
+  <<: *gh-status-handlers
   plan:
   - get: s3-resource-simple.git
     trigger: true
@@ -123,6 +173,9 @@ jobs:
   - get: work-img.docker
     trigger: true
     passed: [test-put]
+  - put: gh-status
+    inputs: [s3-resource-simple.gi]
+    params: {state: pending}
   - task: test-get
     image: work-img.docker
     config:

@@ -1,8 +1,7 @@
 # Settings for the master pipeline.
 project: s3-resource-simple
-s3-resource-simple-registry: s3-resource-simple
-
-# DO NOT TOUCH THESE UNLESS YOU KNOW WHAT YOU ARE DOING:
+gchat_hook:
+team: developers
 branch: master
 tag: latest
 tag_prefix: ""
