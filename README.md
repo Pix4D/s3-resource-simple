@@ -7,7 +7,7 @@ This is a fork of the Concourse resource s3-resource-simple.
 ```YAML
 resource_types:
 - name: s3-resource-simple
-  type: docker-image
+  type: registry-image
   source:
     # No `tag:` specified: will pick up `latest`.
     repository: MYREGISTRY/s3-resource-simple
@@ -27,7 +27,7 @@ Each time a feat branch is merged into the master branch, this pipeline will run
 
 ### Feature branch pipelines
 
-Given feature branch `feat-x`, the associated feature branch pipeline `s3-resource-simple-feat-x` will push the Docker image for the Concourse resource to repository `s3-resource-simple-scratch` with tag `feat-x-latest`, so that additional integrations tests can be done by referring to the scratch repository with the tag `feat-x-latest` without impacting users of the published resource.
+Given feature branch `feat-x`, the associated feature branch pipeline `s3-resource-simple-feat-x` will push the Docker image for the Concourse resource to repository `s3-resource-simple` with tag `feat-x`, so that additional integrations tests can be done by referring to the scratch repository with the tag `feat-x` without impacting users of the published resource.
 
 ### Configuration
 
@@ -37,25 +37,13 @@ Given feature branch `feat-x`, the associated feature branch pipeline `s3-resour
 ### Setting the master pipeline
 
 ```shell
-fly -t developers set-pipeline -p s3-resource-simple-master \
-    -c ci/s3-resource-simple-pipeline.yml \
-    -l ci/settings/master-branch.yml
-
-fly -t developers unpause-pipeline -p s3-resource-simple-master
+fly_helper set-pipeline --allow-setting-master-branch
 ```
 
 ### Setting the feature branch pipeline
 
 ```shell
-export BRANCH=$(git rev-parse --abbrev-ref HEAD)
-fly -t developers set-pipeline -p s3-resource-simple-$BRANCH \
-    -c ci/s3-resource-simple-pipeline.yml \
-    -l ci/settings/feature-branch.yml \
-    -v branch=$BRANCH \
-    -v tag=$BRANCH-latest \
-    -v tag_prefix=$BRANCH-
-
-fly -t developers unpause-pipeline -p s3-resource-simple-$BRANCH
+fly_helper set-pipeline
 ```
 
 ### Understanding the different Docker images at play
@@ -76,7 +64,7 @@ Include the following in your Pipeline YAML file, replacing the values in the an
 ```yaml
 resource_types:
   - name: <resource type name>
-    type: docker-image
+    type: registry-image
     source:
       repository: 18fgsa/s3-resource-simple
 resources:
