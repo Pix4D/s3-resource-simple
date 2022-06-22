@@ -3,5 +3,4 @@ project: s3-resource-simple
 gchat_hook:
 team: developers
 branch: master
-tag: latest
-tag_prefix: ""
+docker_tag: latest
