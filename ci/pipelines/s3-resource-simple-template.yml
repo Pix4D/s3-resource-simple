@@ -38,7 +38,7 @@ resource_types:
     tag: latest
 
 - name: s3-resource-simple
-  type: docker-image
+  type: registry-image
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple
@@ -72,14 +72,14 @@ resources:
     branch: ((branch))
 
 - name: work-img.docker
-  type: docker-image
+  type: registry-image
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple-work-img
     tag: ((docker_tag))
 
 - name: final-img.docker
-  type: docker-image
+  type: registry-image
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple
@@ -111,10 +111,27 @@ jobs:
   - put: gh-status
     inputs: [work-img.git]
     params: {state: pending}
-  - put: work-img.docker
+  - task: build-work-img
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/oci-build-task
+      inputs:
+      - name: work-img.git
+      outputs:
+      - name: image
+      run:
+        path: build
     params:
-      build: work-img.git/ci/work-img
-    get_params: {skip_download: true}
+      CONTEXT: work-img.git/ci/work-img
+      DOCKERFILE: work-img.git/ci/work-img/Dockerfile
+  - put: work-img.docker
+    inputs: [image, work-img.git]
+    params:
+      image: image/image.tar
 
 - name: resource-img
   <<: *gh-status-handlers
@@ -125,10 +142,27 @@ jobs:
   - put: gh-status
     inputs: [s3-resource-simple.git]
     params: {state: pending}
-  - put: final-img.docker
+  - task: build-final-img
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/oci-build-task
+      inputs:
+      - name: s3-resource-simple.git
+      outputs:
+      - name: image
+      run:
+        path: build
     params:
-      build: s3-resource-simple.git
-    get_params: {skip_download: true}
+      CONTEXT: s3-resource-simple.git
+      DOCKERFILE: s3-resource-simple.git/Dockerfile
+  - put: final-img.docker
+    inputs: [image, s3-resource-simple.git]
+    params:
+      image: image/image.tar
 
 - name: test-put
   <<: *gh-status-handlers
