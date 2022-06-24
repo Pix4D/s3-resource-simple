@@ -32,7 +32,7 @@ resource_types:
 
 - name: cogito
   type: registry-image
-  check_every: 1h
+  check_every: 24h
   source:
     repository: pix4d/cogito
     tag: latest
