@@ -19,6 +19,7 @@ payload=`cat`
 bucket=$(echo "$payload" | jq -r '.source.bucket')
 path=$(echo "$payload" | jq -r '.source.path // ""')
 options=$(echo "$payload" | jq -r '.source.options // [] | join(" ")')
+put_options=$(echo "$payload" | jq -r '.source.put_options // [] | join(" ")')
 dir=$(echo "$payload" | jq -r '.params.dir // "."')
 
 # export for `aws` cli
@@ -38,7 +39,7 @@ fi
 cd "$source/$dir"
 echo "Uploading to S3 from dir=$dir ..."
 echo "Running: aws s3 cp $source/$dir \"s3://$bucket/$path\" $options"
-eval aws s3 cp $source/$dir "s3://$bucket/$path" $options
+eval aws s3 cp $source/$dir "s3://$bucket/$path" $options $put_options
 echo "...done."
 
 source "$(dirname $0)/emit.sh" >&3

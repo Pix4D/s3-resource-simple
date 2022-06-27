@@ -93,10 +93,15 @@ resources:
     access_key_id: ((concourse_user_access_key))
     secret_access_key: ((concourse_user_secret_key))
     path: artifacts/s3-resource-simple/((branch))/
-    sync: false # Disable downloading.
-    options:
-    # FIXME! `--recursive` is _currently_ needed to copy a directory :-(
-    - --recursive
+    # DANGER DANGER DANGER
+    # For vast the majority of your use cases, DO NOT enable downloading (do NOT set sync: true)!
+    # You will download, on each get (explicit and implicit) EVERYTHING contained in the bucket!
+    # This resource has a different behavior than the s3 resource!
+    # We enable it only because this pipeline is special: it is testing the resource itself.
+    sync: true # DANGER - DO NOT COPY THIS LINE - DANGER
+    put_options:
+      # copy the source directory recursively.
+      - --recursive
 
 ###############################################################################
 
