@@ -39,6 +39,7 @@ resource_types:
 
 - name: s3-resource-simple
   type: registry-image
+  check_every: 24h
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple
