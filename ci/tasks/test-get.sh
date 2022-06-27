@@ -2,6 +2,10 @@
 
 set -ex
 
-tree bucket.s3simple
+echo "Directory listing"
+ls -R bucket.s3simple
 
-# use out/snapshot to compare with the output of `tree out`
+
+echo "use snapshot to compare with the directory listing above"
+cat bucket.s3simple/snapshot
+
