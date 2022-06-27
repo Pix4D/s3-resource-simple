@@ -61,24 +61,9 @@ resources:
   type: git
   source:
     <<: *s3-resource-simple-git
-    ignore_paths: [ci/work-img]
     branch: ((branch))
 
-- name: work-img.git
-  type: git
-  source:
-    <<: *s3-resource-simple-git
-    paths: [ci/]
-    branch: ((branch))
-
-- name: work-img.docker
-  type: registry-image
-  source:
-    <<: *docker-registry-config
-    repository: docker.ci.pix4d.com/s3-resource-simple-work-img
-    tag: ((docker_tag))
-
-- name: final-img.docker
+- name: s3-resource-simple.docker
   type: registry-image
   source:
     <<: *docker-registry-config
@@ -92,6 +77,8 @@ resources:
     region_name: eu-west-1
     access_key_id: ((concourse_user_access_key))
     secret_access_key: ((concourse_user_secret_key))
+    # For this particular pipeline we use the /artifacts paths also for the master branch,
+    # so that the files uploaded by the tests will expire and be removed periodically.
     path: artifacts/s3-resource-simple/((branch))/
     # DANGER DANGER DANGER
     # For vast the majority of your use cases, DO NOT enable downloading (do NOT set sync: true)!
@@ -107,41 +94,8 @@ resources:
 
 jobs:
 
-- name: work-img
+- name: build
   <<: *gh-status-handlers
-  serial_groups: [img]
-  plan:
-  - get: work-img.git
-    trigger: true
-  - get: s3-resource-simple.git
-  - put: gh-status
-    inputs: [s3-resource-simple.git]
-    params: {state: pending}
-  - task: build-work-img
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: concourse/oci-build-task
-      inputs:
-      - name: work-img.git
-      outputs:
-      - name: image
-      run:
-        path: build
-    params:
-      CONTEXT: work-img.git/ci/work-img
-      DOCKERFILE: work-img.git/ci/work-img/Dockerfile
-  - put: work-img.docker
-    inputs: [image, work-img.git]
-    params:
-      image: image/image.tar
-
-- name: resource-img
-  <<: *gh-status-handlers
-  serial_groups: [img]
   plan:
   - get: s3-resource-simple.git
     trigger: true
@@ -165,30 +119,27 @@ jobs:
     params:
       CONTEXT: s3-resource-simple.git
       DOCKERFILE: s3-resource-simple.git/Dockerfile
-  - put: final-img.docker
+  - put: s3-resource-simple.docker
     inputs: [image, s3-resource-simple.git]
     params:
       image: image/image.tar
 
 - name: test-put
   <<: *gh-status-handlers
-  # The serial_groups is to avoid race conditions when a single commit changes
-  # code both in work-img.git and s3-resource-simple.git
-  serial_groups: [img]
   plan:
   - get: s3-resource-simple.git
     trigger: true
-    passed: [resource-img]
-  - get: work-img.docker
-    trigger: true
-    passed: [work-img]
+    passed: [build]
   - put: gh-status
     inputs: [s3-resource-simple.git]
     params: {state: pending}
   - task: test-put
-    image: work-img.docker
     config:
       platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: busybox
       inputs:
       - name: s3-resource-simple.git
       outputs:
@@ -208,16 +159,16 @@ jobs:
   - get: bucket.s3simple
     trigger: true
     passed: [test-put]
-  - get: work-img.docker
-    trigger: true
-    passed: [test-put]
   - put: gh-status
     inputs: [s3-resource-simple.git]
     params: {state: pending}
   - task: test-get
-    image: work-img.docker
     config:
       platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: busybox
       inputs:
       - name: s3-resource-simple.git
       - name: bucket.s3simple
