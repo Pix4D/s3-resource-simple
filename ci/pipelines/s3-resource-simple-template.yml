@@ -82,9 +82,9 @@ resources:
     # so that the files uploaded by the tests will expire and be removed periodically.
     path: artifacts/s3-resource-simple/((branch))/
     # DANGER DANGER DANGER
-    # For vast the majority of your use cases, DO NOT enable downloading (do NOT set sync: true)!
-    # You will download, on each get (explicit and implicit) EVERYTHING contained in the bucket!
-    # This resource has a different behavior than the s3 resource!
+    # For vast the majority of your use cases, DO NOT enable downloading (do NOT set
+    # sync: true)! It will download, on each `get` (explicit and implicit) EVERYTHING
+    # in the bucket below the `path` !
     # We enable it only because this pipeline is special: it is testing the resource itself.
     sync: true # DANGER - DO NOT COPY THIS LINE - DANGER
     put_options:
