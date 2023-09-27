@@ -120,6 +120,7 @@ jobs:
     params:
       CONTEXT: s3-resource-simple.git
       DOCKERFILE: s3-resource-simple.git/Dockerfile
+      REGISTRY_MIRRORS: concourse:((concourse_artifactory_password))@dockerhub.ci.pix4d.com
   - put: s3-resource-simple.docker
     inputs: [image, s3-resource-simple.git]
     params:
