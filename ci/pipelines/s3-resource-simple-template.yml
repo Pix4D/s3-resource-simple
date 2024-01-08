@@ -60,12 +60,14 @@ resources:
 
 - name: s3-resource-simple.git
   type: git
+  webhook_token: ((concourse_gh_webhook))
   source:
     <<: *s3-resource-simple-git
     branch: ((branch))
 
 - name: s3-resource-simple.docker
   type: registry-image
+  check_every: never
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple
@@ -73,6 +75,7 @@ resources:
 
 - name: bucket.s3simple
   type: s3-resource-simple
+  check_every: never
   source:
     bucket: ci-pix4d-concourse-pipeline
     region_name: eu-west-1
