@@ -10,18 +10,22 @@ meta:
       on_success:
         put: gh-status
         inputs: [s3-resource-simple.git]
+        no_get: true
         params: {state: success}
       on_failure:
         put: gh-status
         inputs: [s3-resource-simple.git]
+        no_get: true
         params: {state: failure}
       on_error:
         put: gh-status
         inputs: [s3-resource-simple.git]
+        no_get: true
         params: {state: error}
       on_abort:
         put: gh-status
         inputs: [s3-resource-simple.git]
+        no_get: true
         # The GH status API doesn't have "abort", so we use the closest state.
         params:
           state: error
@@ -100,11 +104,13 @@ jobs:
 
 - name: build
   <<: *gh-status-handlers
+  max_in_flight: 1
   plan:
   - get: s3-resource-simple.git
     trigger: true
   - put: gh-status
     inputs: [s3-resource-simple.git]
+    no_get: true
     params: {state: pending}
   - task: build-final-img
     privileged: true
@@ -126,17 +132,20 @@ jobs:
       REGISTRY_MIRRORS: concourse:((concourse_artifactory_password))@dockerhub.ci.pix4d.com
   - put: s3-resource-simple.docker
     inputs: [image, s3-resource-simple.git]
+    no_get: true
     params:
       image: image/image.tar
 
 - name: test-put
   <<: *gh-status-handlers
+  max_in_flight: 1
   plan:
   - get: s3-resource-simple.git
     trigger: true
     passed: [build]
   - put: gh-status
     inputs: [s3-resource-simple.git]
+    no_get: true
     params: {state: pending}
   - task: test-put
     config:
@@ -152,11 +161,14 @@ jobs:
       run:
         path: s3-resource-simple.git/ci/tasks/test-put.sh
   - put: bucket.s3simple
+    inputs: [out]
+    no_get: true
     params:
       dir: out
 
 - name: test-get
   <<: *gh-status-handlers
+  max_in_flight: 1
   plan:
   - get: s3-resource-simple.git
     trigger: true
@@ -166,6 +178,7 @@ jobs:
     passed: [test-put]
   - put: gh-status
     inputs: [s3-resource-simple.git]
+    no_get: true
     params: {state: pending}
   - task: test-get
     config:
