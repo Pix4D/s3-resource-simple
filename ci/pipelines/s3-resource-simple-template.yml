@@ -1,7 +1,7 @@
 meta:
   docker-registry-config: &docker-registry-config
-    username: ((docker_cloud_pix4d_user))
-    password: ((docker_cloud_pix4d_password))
+    username: concourse
+    password: ((concourse_artifactory_password))
 
   s3-resource-simple-git: &s3-resource-simple-git
     uri: https://github.com/Pix4D/s3-resource-simple.git
