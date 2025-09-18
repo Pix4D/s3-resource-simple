@@ -68,6 +68,7 @@ resources:
   source:
     <<: *s3-resource-simple-git
     branch: ((branch))
+    disable_ci_skip: true # This is needed to let the git resource optimize the check step.
 
 - name: s3-resource-simple.docker
   type: registry-image
