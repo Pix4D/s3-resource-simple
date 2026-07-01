@@ -35,11 +35,32 @@ fi
 # Export AWS_DEFAULT_REGION if set
 [ -n "$AWS_DEFAULT_REGION" ] && export AWS_DEFAULT_REGION
 
+downloaded_files="[]"
 if [ "$dosync" == "true" ]; then
   echo "Downloading from S3..."
   eval aws s3 sync "s3://$bucket/$path" $dest $options
   echo "...done."
+  downloaded_files=$(find "$dest" -type f | sed "s|^$dest/||" | sort | jq -R -s 'split("\n") | map(select(length > 0))')
 fi
 
 version=$(echo "$payload" | jq -c '.version')
-echo "{\"version\": $version}" >&3
+downloaded_files_list=$(echo "$downloaded_files" | jq -r 'join(", ")')
+
+jq -n \
+  --argjson version "$version" \
+  --arg bucket "$bucket" \
+  --arg path "$path" \
+  --arg files "$downloaded_files_list" \
+  --arg region "$AWS_DEFAULT_REGION" \
+  --arg sync "$dosync" \
+  '{
+    version: $version,
+    metadata: (
+      [{name: "sync", value: $sync}]
+      + (if $region != "" then [{name: "region", value: $region}] else [] end)
+      + [{name: "bucket", value: $bucket},
+         {name: "path", value: $path}]
+      + (if ($version | .LastModified?) then [{name: "last_modified", value: $version.LastModified}] else [] end)
+      + (if $files != "" then [{name: "files", value: $files}] else [] end)
+    )
+  }' >&3

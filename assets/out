@@ -37,10 +37,29 @@ fi
 [ -n "$AWS_DEFAULT_REGION" ] && export AWS_DEFAULT_REGION
 
 cd "$source/$dir"
+uploaded_files=$(find . -type f | sed 's|^\./||' | sort | jq -R -s 'split("\n") | map(select(length > 0))')
+
 echo "Uploading to S3 from dir=$dir ..."
 echo "Running: aws s3 cp $source/$dir \"s3://$bucket/$path\" $options"
 eval aws s3 cp $source/$dir "s3://$bucket/$path" $options $put_options
 echo "...done."
 
 recent="$("$(dirname $0)/get_version.sh" "$bucket" "$path")"
-echo "{\"version\": $recent}" >&3
+uploaded_files_list=$(echo "$uploaded_files" | jq -r 'join(", ")')
+
+jq -n \
+  --argjson version "$recent" \
+  --arg bucket "$bucket" \
+  --arg path "$path" \
+  --arg files "$uploaded_files_list" \
+  --arg region "$AWS_DEFAULT_REGION" \
+  '{
+    version: $version,
+    metadata: (
+      (if $region != "" then [{name: "region", value: $region}] else [] end)
+      + [{name: "bucket", value: $bucket},
+         {name: "path", value: $path}]
+      + (if ($version | .LastModified?) then [{name: "last_modified", value: $version.LastModified}] else [] end)
+      + (if $files != "" then [{name: "files", value: $files}] else [] end)
+    )
+  }' >&3
