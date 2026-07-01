@@ -41,4 +41,5 @@ if [ "$dosync" == "true" ]; then
   echo "...done."
 fi
 
-source "$(dirname $0)/emit.sh" >&3
+version=$(echo "$payload" | jq -c '.version')
+echo "{\"version\": $version}" >&3

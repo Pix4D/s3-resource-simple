@@ -42,4 +42,5 @@ echo "Running: aws s3 cp $source/$dir \"s3://$bucket/$path\" $options"
 eval aws s3 cp $source/$dir "s3://$bucket/$path" $options $put_options
 echo "...done."
 
-source "$(dirname $0)/emit.sh" >&3
+recent="$("$(dirname $0)/get_version.sh" "$bucket" "$path")"
+echo "{\"version\": $recent}" >&3
