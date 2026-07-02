@@ -43,7 +43,17 @@ resource_types:
 
 - name: s3-resource-simple
   type: registry-image
-  check_every: 24h
+  # This is a resource type image that we build and push to our registry from the same pipeline and
+  # at the same time we need to run the tests using the same resource type image we just built.
+  # We must ensure that the same image digest that we just built is used in tests. This is impossible
+  # to explicitly configure from the pipeline perspective, because we don't much control over the version
+  # of the resource type. Concourse will schedule the check and get for the resource type on its own.
+  # Even putting check_every to a very small value, the risk of the race condition is still there. The only
+  # viable workaround so far is to set check_every to never. This will trigger the check ALWAYS. 
+  # NOTE that we are still not 100% safe from the race condition, because if another build pushes the new digest
+  # while our test jobs are waiting for the worker, we can still use the wrong digest. Sadly, this is the best
+  # we can do.
+  check_every: never
   source:
     <<: *docker-registry-config
     repository: docker.ci.pix4d.com/s3-resource-simple
