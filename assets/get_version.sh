@@ -12,4 +12,4 @@ aws s3api list-objects \
   --bucket "$bucket" \
   --prefix "$prefix" \
   --query 'Contents[].{LastModified: LastModified}' \
-| jq -c 'if length == 0 then empty else max_by(.LastModified) end'
+| jq -c 'if . == null or length == 0 then empty else max_by(.LastModified) end'

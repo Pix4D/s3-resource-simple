@@ -43,4 +43,8 @@ eval aws s3 cp $source/$dir "s3://$bucket/$path" $options $put_options
 echo "...done."
 
 recent="$("$(dirname $0)/get_version.sh" "$bucket" "$path")"
-echo "{\"version\": $recent}" >&3
+if [ -z "$recent" ]; then
+  echo "warning: no files were uploaded to s3://$bucket/$path (dir=$dir did not contained any files); emitting synthetic version timestamp" >&2
+  recent="$(jq -n --arg ts "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" '{LastModified: $ts}')"
+fi
+echo "$recent" | jq -c '{version: .}' >&3
